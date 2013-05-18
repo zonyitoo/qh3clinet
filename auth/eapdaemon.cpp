@@ -27,7 +27,9 @@ void EAPDaemon::Login(const QVariantMap &userinfo) {
                 userinfo["password"].toString().toStdString(),
                 userinfo["interface"].toString().toStdString()));
         authservice->redirect_promote([this] (const std::string& msg) {
-            emit Message(QString::fromStdString(msg));
+            QString repmsg = QString::fromStdString(msg).trimmed();
+            if (!repmsg.isEmpty())
+                emit Message(repmsg);
         });
 
         authservice->set_status_changed_listener([this] (int8_t statno) {
