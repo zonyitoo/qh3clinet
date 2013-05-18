@@ -28,6 +28,12 @@ If you are using Ubuntu 13.04 amd64 or later
 dpkg -i qh3client_[version]_amd64.deb
 ```
 
+**After Got 'EAP Success', you can close the UI. It will auto-restore the stat when you launch it next time.**
+
+## Known Bugs
+
+* If you unplug the wire without logoff, you have to re-open the UI.
+
 ## Thanks
 
 * [YaH3C](git@github.com:humiaozuzu/YaH3C.git)
