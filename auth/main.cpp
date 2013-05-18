@@ -22,7 +22,7 @@ void daemonize() {
     if (getpid() == 1) return;
     pid_t pid = fork();
     if (pid < 0) exit(EXIT_FAILURE);
-    else if (pid > 0) exit(EXIT_SUCCESS);
+    if (pid > 0) exit(EXIT_SUCCESS);
 
     setsid();
     for (int i = getdtablesize(); i >= 0; -- i)
