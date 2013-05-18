@@ -1,0 +1,5 @@
+#!/bin/sh
+
+update-rc.d qh3client-daemon defaults 99
+
+service qh3client-daemon start

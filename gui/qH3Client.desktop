@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=0.1
+Encoding=UTF-8
+Name=qH3Client
+GenericName=H3C Auth Client
+Comment=A GUI Version of YaH3C base on Qt5
+Exec=qh3client
+Icon=/usr/share/pixmaps/qH3Client.png
+Terminal=false
+Categories=GNOME;Appliation;Network

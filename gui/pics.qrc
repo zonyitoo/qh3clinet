@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>icon.png</file>
+        <file>systray.png</file>
+    </qresource>
+</RCC>

@@ -1,0 +1,23 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node>
+  <interface name="com.qh3client.EAPDaemon">
+    <signal name="Message">
+      <arg name="msg" type="s" direction="out"/>
+    </signal>
+    <signal name="Status">
+      <arg name="statno" type="i" direction="out"/>
+    </signal>
+    <method name="Login">
+      <arg name="userinfo" type="a{sv}" direction="in"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="QVariantMap"/>
+    </method>
+    <method name="Logoff">
+    </method>
+    <method name="HasLogin">
+      <arg type="b" direction="out"/>
+    </method>
+    <method name="LoginUser">
+      <arg type="s" direction="out"/>
+    </method>
+  </interface>
+</node>

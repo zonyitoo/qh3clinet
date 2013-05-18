@@ -1,0 +1,8 @@
+Package: qH3Client
+Version: 0.1
+Section: net
+Priority: optional
+Maintainer: zonyitoo <zonyitoo@gmail.com>
+Architecture: amd64
+Depends: qt5-default
+Description: YaH3C GUI Version

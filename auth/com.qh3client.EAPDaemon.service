@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=com.qh3client.EAPDaemon
+Exec=/usr/bin/qh3client-daemon
+User=root
