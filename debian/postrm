@@ -1,3 +1,4 @@
 #!/bin/sh
 
+service qh3client-daemon stop
 update-rc.d -f qh3client-daemon remove
