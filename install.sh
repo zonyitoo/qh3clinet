@@ -6,6 +6,8 @@ SYSTEM_PIXMAP=/usr/share/pixmaps
 APP_PATH=/usr/share/applications
 INIT_PATH=/etc/init.d
 
+service qh3client-daemon stop
+
 cp gui/icon.png $SYSTEM_PIXMAP/qH3Client.png
 cp gui/qH3Client.desktop $APP_PATH
 
@@ -17,3 +19,5 @@ chmod +x $INIT_PATH/qh3client-daemon
 cp auth/qh3client-daemon $BINPATH
 cp gui/qh3client $BINPATH
 chmod +x $BINPATH/qh3client $BINPATH/qh3client-daemon
+
+service qh3client-daemon start

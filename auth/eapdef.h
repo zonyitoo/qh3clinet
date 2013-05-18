@@ -40,6 +40,8 @@ static const uint8_t EAP_TYPE_MD5 = 4;      // md5 challenge
 static const uint8_t EAP_TYPE_H3C = 7;      // H3C eap packet (used for SYSU east campus)
 
 struct eap_t {
+    uint8_t code;
+    uint8_t id;
     uint16_t eap_len;
     uint8_t reqtype;
     uint8_t datalen;
@@ -50,8 +52,6 @@ struct eapol_t {
     uint8_t vers;
     uint8_t type;
     uint16_t eapol_len;
-    uint8_t code;
-    uint8_t id;
     eap_t eap;
 };
 

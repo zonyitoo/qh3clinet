@@ -12,7 +12,7 @@ class EAPAuth {
         ~EAPAuth();
 
         void auth() const;
-        void logoff() const;
+        void logoff();
         void redirect_promote(const std::function<void(const std::string&)>&);
         void set_status_changed_listener(const std::function<void(int statno)>&);
 

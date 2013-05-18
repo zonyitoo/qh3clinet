@@ -2,6 +2,7 @@
 #include "eapauth.h"
 #include <sys/socket.h>
 #include <sys/ioctl.h>
+#include <sys/time.h>
 #include <net/if.h>
 #include <cstring>
 #include <iostream>
@@ -9,7 +10,6 @@
 #include <stdexcept>
 #include <stdarg.h>
 #include <iconv.h>
-#include <sstream>
 
 EAPAuth::EAPAuth(const std::string& user_name, 
         const std::string& password, const std::string& iface)
@@ -24,6 +24,10 @@ EAPAuth::EAPAuth(const std::string& user_name,
     }
 
     //setsockopt(client_fd, SOL_SOCKET, SO_BINDTODEVICE, iface.c_str(), iface.length());
+    struct timeval timeout;
+    timeout.tv_sec = 5;
+    timeout.tv_usec = 0;
+    setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof(timeout));
 
     struct ifreq ifr; 
     memset(&ifr, 0, sizeof(ifr));
@@ -150,18 +154,29 @@ bool EAPAuth::eap_handler(const std::string& eap_packet) const {
         return true;
     }
 
-    eapol_packet.code = eap_packet[4];
-    eapol_packet.id = eap_packet[5];
+    eapol_packet.eap.code = eap_packet[4];
+    eapol_packet.eap.id = eap_packet[5];
     
     eapol_packet.eap.eap_len = ntohs(*(uint16_t *) &eap_packet[6]);
 
-    switch (eapol_packet.code) {
+    switch (eapol_packet.eap.code) {
         case EAP_SUCCESS:
-            status_notify(EAPAUTH_EAP_SUCCESS);
-            break;
+            {
+                status_notify(EAPAUTH_EAP_SUCCESS);
+                struct timeval timeout;
+                timeout.tv_sec = 30;
+                timeout.tv_usec = 0;
+                setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof(timeout));
+                break;
+            }
         case EAP_FAILURE:
-            status_notify(EAPAUTH_EAP_FAILURE);
-            display_promote(eap_packet.substr(10));
+            {
+                status_notify(EAPAUTH_EAP_FAILURE);
+                struct timeval timeout;
+                timeout.tv_sec = 5;
+                timeout.tv_usec = 0;
+                setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof(timeout));
+            }
             return false;
             break;
         case EAP_RESPONSE:
@@ -174,40 +189,53 @@ bool EAPAuth::eap_handler(const std::string& eap_packet) const {
             switch (eapol_packet.eap.reqtype) {
                 case EAP_TYPE_ID:
                     status_notify(EAPAUTH_AUTH_ID);
-                    send_response_id(eapol_packet.id);
+                    send_response_id(eapol_packet.eap.id);
                     break;
                 case EAP_TYPE_H3C:
                     status_notify(EAPAUTH_AUTH_H3C);
-                    send_response_h3c(eapol_packet.id);
+                    send_response_h3c(eapol_packet.eap.id);
                     break;
                 case EAP_TYPE_MD5:
                     status_notify(EAPAUTH_AUTH_MD5);
-                    send_response_md5(eapol_packet.id, eapol_packet.eap.data);
+                    send_response_md5(eapol_packet.eap.id, eapol_packet.eap.data);
                     break;
                 default:
                     status_notify(EAPAUTH_UNKNOWN_REQUEST_TYPE);
             }
             break;
-        default:
-            if (eapol_packet.code == 10 && eapol_packet.id == 5) {
+        case 10:
+            {
                 iconv_t cd = iconv_open("UTF-8", "GBK");
-                char buf[1024] = {0};
-                size_t inleft = eap_packet.length() - 12;
+                if (cd == (iconv_t) -1) {
+                    perror("iconv_open");
+                    break;
+                }
+                size_t outleft = (eap_packet.length() + 1 - 12) * 2;
+                char *buf = new char[outleft];
+                size_t inleft = eap_packet.length() + 1 - 12;
                 char *p_in = const_cast<char *>(eap_packet.c_str()) + 12;
-                size_t outleft = sizeof(buf);
+
                 char *p_out = buf;
-                size_t ret = iconv(cd, &p_in, &inleft, &p_out, &outleft);
+                while (inleft != 0) {
+                    size_t ret = iconv(cd, &p_in, &inleft, &p_out, &outleft);
+                    if (ret == (size_t) -1) {
+                        *p_out = *p_in;
+                        p_out ++;
+                        p_in ++;
+                        inleft --;
+                        outleft --;
+                    }
+                }
 
-                if (ret == -1)
-                    display_promote(eap_packet.substr(12));
-                else
-                    display_promote(buf);
+                std::string convstr(buf);
+                convstr.append(p_in);
+                display_promote(std::move(convstr));
 
-                std::cout << eap_packet.substr(12) << std::endl;
+                delete [] buf;
+                break;
             }
-            else {
-                status_notify(EAPAUTH_UNKNOWN_EAP_CODE);
-            }
+        default:
+            status_notify(EAPAUTH_UNKNOWN_EAP_CODE);
     }
     return true;
 }
@@ -225,9 +253,12 @@ void EAPAuth::auth() const {
     }
 }
 
-void EAPAuth::logoff() const {
+void EAPAuth::logoff() {
+    struct timeval timeout;
+    timeout.tv_sec = 5;
+    timeout.tv_usec = 0;
+    setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof(timeout));
     send_logoff();
-    display_promote("Sent logoff");
 }
 
 void EAPAuth::redirect_promote(const std::function<void (const std::string &)> &func) {

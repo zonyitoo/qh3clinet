@@ -43,6 +43,8 @@ void EAPDaemon::Login(const QVariantMap &userinfo) {
                 break;
             }
         });
+        if (auththread.get() != nullptr)
+            auththread->quit();
         auththread.reset(new AuthThread(authservice, this));
         auththread->start();
     }
@@ -73,20 +75,23 @@ QString EAPDaemon::LoginUser() {
 }
 
 AuthThread::AuthThread(std::shared_ptr<EAPAuth> authservice, EAPDaemon *eapdaemon)
-    : authservice(authservice), autoretry_count(5), eapdaemon(eapdaemon) {
+    : authservice(authservice), autoretry_count(5), eapdaemon(eapdaemon), toStop(false) {
+}
 
+AuthThread::~AuthThread() {
+    toStop = true;
 }
 
 void AuthThread::run() {
-    while (autoretry_count --) {
+    while (!toStop && autoretry_count --) {
         try {
             authservice->auth();
-            if (!eapdaemon->HasLogin()) break;
+            if (!eapdaemon->HasLogin()) return;
         }
         catch (const EAPAuthException& expt) {
             qDebug() << Q_FUNC_INFO << " " << expt.what();
-            emit eapdaemon->Message(expt.what());
         }
+        if (!eapdaemon->HasLogin()) break;
         emit eapdaemon->Status(EAPAUTH_AUTH_AUTORETRY);
         QThread::sleep(2);
     }
