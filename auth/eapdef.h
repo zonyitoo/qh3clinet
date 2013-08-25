@@ -4,13 +4,23 @@
 #include <arpa/inet.h>
 #include <utility>
 #include <string>
+#include <array>
+#include <vector>
+#include <memory>
+#include <iostream>
 
 // Constants 
 // References : http://tools.ietf.org/html/rfc3748
-static const uint32_t ETHERTYPE_PAE = 0x888e;
-static const char PAE_GROUP_ADDR[] = "\x01\x80\xc2\x00\x00\x03";
-static const char BROADCAST_ADDR[] = "\xff\xff\xff\xff\xff\xff";
-static const char VERSION_INFO[] = "\x06\x07\x62jQ7SE8BZ3MqHhs3clMregcDY3Y=\x20\x20";
+static const uint16_t ETHERTYPE_PAE = 0x888e;
+
+typedef std::array<uint8_t, 6> mac_addr_t;
+static const mac_addr_t PAE_GROUP_ADDR = {{0x01, 0x80, 0xc2, 0x00, 0x00, 0x03}};
+static const mac_addr_t BROADCAST_ADDR = {{0xff, 0xff, 0xff, 0xff, 0xff, 0xff}};
+static const std::array<uint8_t, 32> VERSION_INFO = 
+                                        {{0x06, 0x07, 'b', 'j', 'Q', '7', 'S', 'E', '8', 'B',
+                                        'Z', '3', 'M', 'q', 'H', 'h', 's', '3', 'c', 'l', 
+                                        'M', 'r', 'e', 'g', 'c', 'D', 'Y', '3', 'Y', '=',
+                                        0x20, 0x20}};
 
 static const uint8_t EAPOL_VERSION = 1;
 static const uint8_t EAPOL_EAPPACKET = 0;
@@ -44,57 +54,21 @@ struct eap_t {
     uint8_t id;
     uint16_t eap_len;
     uint8_t reqtype;
-    uint8_t datalen;
-    std::string data;
+    std::vector<uint8_t> data;
+
+    std::string to_buf() const;
+    uint16_t get_len() const;
 };
 
 struct eapol_t {
     uint8_t vers;
     uint8_t type;
     uint16_t eapol_len;
-    eap_t eap;
+    std::shared_ptr<eap_t> eap;
+
+    std::string to_buf() const;
+    uint16_t get_len() const;
 };
-
-#include <string>
-inline std::string get_EAPOL(uint8_t type, const std::string& payload = std::string()) {
-    std::string result;
-    result.append((char *)(&EAPOL_VERSION), sizeof(EAPOL_VERSION));
-    result.append((char *)(&type), sizeof(type));
-    uint16_t len = static_cast<uint16_t>(payload.size());
-    len = htons(len);
-    result.append((char *)(&len), sizeof(len));
-    result.append(payload);
-    return std::move(result);
-}
-
-inline std::string get_EAP(uint8_t code, uint8_t id, uint8_t type, 
-        const std::string& data = std::string()) {
-    std::string result;
-    uint16_t n = 4;
-    result.append((char *)(&code), sizeof(code));
-    result.append((char *)(&id), sizeof(id));
-    if (code == EAP_SUCCESS || code == EAP_FAILURE) {
-        n = htons(n);
-        result.append((char *)(&n), sizeof(n));
-    }
-    else {
-        n = 5 + data.length();
-        n = htons(n);
-        result.append((char *)(&n), sizeof(n));
-        result.append((char *)(&type), sizeof(type));
-        result.append(data);
-    }
-    return std::move(result);
-}
-
-inline std::string get_ethernet_header(const std::string& src, const std::string& dst, 
-        uint16_t type) {
-    type = htons(type);
-    std::string result(dst);
-    result.append(src);
-    result.append((char *)(&type), sizeof(type));
-    return std::move(result);
-}
 
 enum {
     EAPAUTH_UNKNOWN_REQUEST_TYPE = -3,
@@ -138,3 +112,15 @@ inline std::string strstat(int statno) {
         return std::string("Unknown Status Code");
     }
 }
+
+class EAPAuthException : public std::runtime_error {
+    public: 
+        explicit EAPAuthException(const std::string& what_arg)
+            : std::runtime_error(what_arg) {}
+};
+
+class EAPAuthFailed : public EAPAuthException {
+    public:
+        explicit EAPAuthFailed()
+            : EAPAuthException("EAPAuth Failed!") {}
+};

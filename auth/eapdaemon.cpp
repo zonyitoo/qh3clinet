@@ -26,13 +26,13 @@ void EAPDaemon::Login(const QVariantMap &userinfo) {
         authservice.reset(new EAPAuth(userinfo["username"].toString().toStdString(),
                 userinfo["password"].toString().toStdString(),
                 userinfo["interface"].toString().toStdString()));
-        authservice->redirect_promote([this] (const std::string& msg) {
+        authservice->set_promote_listener([this] (const std::string& msg) {
             QString repmsg = QString::fromStdString(msg).trimmed();
             if (!repmsg.isEmpty())
                 emit Message(repmsg);
         });
 
-        authservice->set_status_changed_listener([this] (int8_t statno) {
+        authservice->set_status_listener([this] (int8_t statno) {
             emit Status(statno);
             qDebug() << "Status: " << QString::fromStdString(strstat(statno));
             switch (statno) {
@@ -46,7 +46,7 @@ void EAPDaemon::Login(const QVariantMap &userinfo) {
             }
         });
         if (auththread.get() != nullptr)
-            auththread->quit();
+            auththread->stop();
         auththread.reset(new AuthThread(authservice, this));
         auththread->start();
     }
@@ -77,23 +77,24 @@ QString EAPDaemon::LoginUser() {
 }
 
 AuthThread::AuthThread(std::shared_ptr<EAPAuth> authservice, EAPDaemon *eapdaemon)
-    : authservice(authservice), autoretry_count(5), eapdaemon(eapdaemon), toStop(false) {
-}
-
-AuthThread::~AuthThread() {
-    toStop = true;
+    : authservice(authservice), autoretry_count(5), eapdaemon(eapdaemon) {
 }
 
 void AuthThread::run() {
-    while (!toStop && autoretry_count --) {
+    while (autoretry_count --) {
         try {
             authservice->auth();
-            if (!eapdaemon->HasLogin()) return;
+        }
+        catch (const EAPAuthFailed& expt) {
+            qDebug() << Q_FUNC_INFO << "Authentication failed";
+            if (!eapdaemon->HasLogin())
+                break;
         }
         catch (const EAPAuthException& expt) {
             qDebug() << Q_FUNC_INFO << " " << expt.what();
+            if (!eapdaemon->HasLogin())
+                break;
         }
-        if (!eapdaemon->HasLogin()) break;
         emit eapdaemon->Status(EAPAUTH_AUTH_AUTORETRY);
         QThread::sleep(2);
     }
@@ -102,4 +103,10 @@ void AuthThread::run() {
 
 void AuthThread::reset_autoretry() {
     autoretry_count = 5;
+}
+
+void AuthThread::stop() {
+    authservice->logoff();
+    this->terminate();
+    this->wait();
 }

@@ -90,7 +90,7 @@
    </property>
    <property name="font">
     <font>
-     <family>Sans Serif</family>
+     <family>文泉驿微米黑</family>
      <pointsize>8</pointsize>
     </font>
    </property>
@@ -122,6 +122,11 @@
     </property>
     <item>
      <widget class="QPushButton" name="submitPushButton">
+      <property name="font">
+       <font>
+        <family>文泉驿微米黑</family>
+       </font>
+      </property>
       <property name="text">
        <string>登录</string>
       </property>
@@ -140,6 +145,11 @@
         <width>40</width>
         <height>16777215</height>
        </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>文泉驿微米黑</family>
+       </font>
       </property>
       <property name="text">
        <string>显示</string>

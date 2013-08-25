@@ -24,6 +24,9 @@ MainWidget::MainWidget(QWidget *parent) :
     for (const QNetworkInterface& iface : ifacelist)
         ui->ifaceComboBox->addItem(iface.name());
 
+    if (ifacelist.size() > 1)
+        ui->ifaceComboBox->setCurrentIndex(1);
+
     QStringList groups = settings->childGroups();
     for (const QString& gname : groups)
         ui->nameComboBox->addItem(gname);
@@ -37,30 +40,30 @@ MainWidget::MainWidget(QWidget *parent) :
         case EAPAUTH_EAP_SUCCESS:
             hasLogin = true;
             ui->submitPushButton->setEnabled(true);
-            ui->submitPushButton->setText(trUtf8("下线"));
+            ui->submitPushButton->setText(tr("下线"));
 
             settings->beginGroup(ui->nameComboBox->currentText().trimmed());
             settings->setValue("password", ui->pwdLineEdit->text().trimmed());
             settings->setValue("iface", ui->ifaceComboBox->currentText());
             settings->endGroup();
 
-            ui->statusPlainTextEdit->appendHtml(trUtf8("<font color=blue>登录成功</font>"));
+            ui->statusPlainTextEdit->appendHtml(tr("<font color=blue>登录成功</font>"));
 
             QTimer::singleShot(3000, this, SLOT(timer_hide_status()));
             break;
         case EAPAUTH_EAP_FAILURE:
             unfreeze();
             if (hasLogin)
-                ui->statusPlainTextEdit->appendHtml(trUtf8("<font color=blue>认证失败</font>"));
+                ui->statusPlainTextEdit->appendHtml(tr("<font color=blue>认证失败</font>"));
             else
-                ui->statusPlainTextEdit->appendHtml(trUtf8("<font color=blue>下线成功</font>"));
+                ui->statusPlainTextEdit->appendHtml(tr("<font color=blue>下线成功</font>"));
 
-            ui->submitPushButton->setText(trUtf8("登录"));
+            ui->submitPushButton->setText(tr("登录"));
             animShowStat();
             QTimer::singleShot(3000, this, SLOT(timer_hide_status()));
             break;
         case EAPAUTH_AUTH_START:
-            ui->statusPlainTextEdit->appendHtml(trUtf8("<font color=black>开始认证 [")
+            ui->statusPlainTextEdit->appendHtml(tr("<font color=black>开始认证 [")
                             + ui->nameComboBox->currentText().trimmed()
                             + "]</font>");
             break;
@@ -83,8 +86,8 @@ MainWidget::MainWidget(QWidget *parent) :
                 ui->nameComboBox->setCurrentIndex(nameind);
         }
 
-        ui->statusPlainTextEdit->appendHtml("<font color=black>[" + uname + trUtf8("] 已登录</font>"));
-        ui->submitPushButton->setText(trUtf8("下线"));
+        ui->statusPlainTextEdit->appendHtml("<font color=black>[" + uname + tr("] 已登录</font>"));
+        ui->submitPushButton->setText(tr("下线"));
         hasLogin = true;
         freeze();
         ui->submitPushButton->setEnabled(true);
@@ -111,7 +114,7 @@ void MainWidget::on_statPushButton_clicked()
 
 void MainWidget::animHideStat()
 {
-    ui->statPushButton->setText(trUtf8("显示"));
+    ui->statPushButton->setText(tr("显示"));
     QPropertyAnimation *wAnim = new QPropertyAnimation(this, "geometry");
     wAnim->setStartValue(this->geometry());
     QRect endval = this->geometry();
@@ -141,7 +144,7 @@ void MainWidget::animHideStat()
 
 void MainWidget::animShowStat()
 {
-    ui->statPushButton->setText(trUtf8("隐藏"));
+    ui->statPushButton->setText(tr("隐藏"));
     QPropertyAnimation *wAnim = new QPropertyAnimation(this, "geometry");
     wAnim->setStartValue(this->geometry());
     this->setMaximumHeight(400);
@@ -201,14 +204,14 @@ void MainWidget::on_submitPushButton_clicked()
         userinfo.insert("password", pwd);
         userinfo.insert("interface", ui->ifaceComboBox->currentText());
         eapdaemonif->Login(userinfo);
-        ui->submitPushButton->setText(trUtf8("正在登录"));
+        ui->submitPushButton->setText(tr("正在登录"));
 
         ui->statusPlainTextEdit->clear();
         animShowStat();
     }
     else {
         eapdaemonif->Logoff();
-        ui->submitPushButton->setText(trUtf8("正在下线"));
+        ui->submitPushButton->setText(tr("正在下线"));
         ui->statusPlainTextEdit->appendPlainText("发送下线请求");
         hasLogin = false;
     }

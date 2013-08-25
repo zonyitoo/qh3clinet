@@ -18,7 +18,9 @@ TEMPLATE = app
 SOURCES += main.cpp \
     eapdaemonadapter.cpp \
     eapdaemon.cpp \
-    eapauth.cpp
+    eapauth.cpp \
+    eaputils.cpp \
+    eapdef.cpp
 
 OTHER_FILES += \
     com.qh3client.EAPDaemon.conf \
@@ -28,4 +30,5 @@ HEADERS += \
     eapdaemonadapter.h \
     eapdaemon.h \
     eapauth.h \
-    eapdef.h
+    eapdef.h \
+    eaputils.h

@@ -10,11 +10,12 @@
 #include <sys/stat.h>
 
 int lockfd = -1;
+const static char *lockfile = "/tmp/qh3client.lock";
 
 static void interrupt_handler(int signo) {
-    if (lockf(lockfd, F_ULOCK, 0) < 0) exit(EXIT_FAILURE);
-    remove("qh3client.lock");
+    if (signo != SIGINT && signo != SIGTERM) return;
 
+    remove(lockfile);
     exit(EXIT_FAILURE);
 }
 
@@ -25,16 +26,19 @@ void daemonize() {
     if (pid > 0) exit(EXIT_SUCCESS);
 
     setsid();
-    for (int i = getdtablesize(); i >= 0; -- i)
-        close(i);
+
+    close(fileno(stdin));
+    close(fileno(stdout));
+    close(fileno(stderr));
+
     int nullfd = open("/dev/null", O_RDWR);
     dup(nullfd);
     dup(nullfd);
 
     umask(027);
-    chdir("/tmp");
+    chdir("/");
 
-    lockfd = open("qh3client.lock", O_RDWR | O_CREAT, 0640);
+    lockfd = open(lockfile, O_RDWR | O_CREAT, 0640);
     if (lockfd < 0) exit(EXIT_FAILURE);
     if (lockf(lockfd, F_TLOCK, 0) < 0) exit(EXIT_SUCCESS);
 
@@ -47,10 +51,11 @@ void daemonize() {
     signal(SIGTTOU, SIG_IGN);
     signal(SIGTTIN, SIG_IGN);
     signal(SIGINT, interrupt_handler);
+    signal(SIGTERM, interrupt_handler);
 }
 
 int stop() {
-    FILE *fp = fopen("/tmp/qh3client.lock", "r");
+    FILE *fp = fopen(lockfile, "r");
     if (fp == nullptr) return 0;
     pid_t pid;
     fscanf(fp, "%d", &pid);
@@ -68,6 +73,7 @@ int main(int argc, char *argv[])
     QString arg(argv[1]);
     if (arg == "start") {
         qWarning() << "qh3client-daemon Start";
+        stop();
         daemonize();
     }
     else if (arg == "stop") {
@@ -78,6 +84,10 @@ int main(int argc, char *argv[])
         qWarning() << "qh3client-daemon Restart";
         stop();
         daemonize();
+    }
+    else {
+        fprintf(stderr, "argument error\n");
+        exit(EXIT_FAILURE);
     }
 
     QCoreApplication a(argc, argv);

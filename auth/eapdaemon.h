@@ -32,14 +32,14 @@ private:
 class AuthThread : public QThread {
 public:
     AuthThread(std::shared_ptr<EAPAuth> authservice, EAPDaemon *eapdaemon);
-    ~AuthThread();
     void run();
     void reset_autoretry();
+
+    void stop();
 private:
     std::shared_ptr<EAPAuth> authservice;
     int autoretry_count;
     EAPDaemon *eapdaemon;
-    bool toStop;
 };
 
 #endif // EAPDAEMON_H
